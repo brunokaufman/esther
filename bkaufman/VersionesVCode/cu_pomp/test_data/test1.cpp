@@ -62,7 +62,7 @@ struct mido_sistema_prueba{
 	
 	float prob_normal(T i, int inf){//p es la probabilidad de un exito.
 		float var = i * prob_deteccion * (1.0 - prob_deteccion);
-		float diff = (i * prob_deteccion - inf);
+		float diff = (i * prob_deteccion - (float) inf);
 		float result = exp(-diff * diff / (2 * var));
 		
 		if(result < 0.0){
@@ -82,16 +82,11 @@ struct mido_sistema_prueba{
 			int moda_binom = (int) ((float)(maximo + 1) * prob_deteccion);
 			bool aceptado = false;
 			int random = 0;
-			int count = 0;
-			while(!aceptado && count<10000){
+			while(!aceptado){
 				random = std::rand() % ((int) maximo);
 				float prob_aceptacion = ((float) std::rand())/((float) RAND_MAX);
 				if(prob_normal(maximo, random) > prob_aceptacion){
 					aceptado = true;
-				}
-				count++;
-				if(count == 10000){
-					std::cout << count << std::endl;
 				}
 			}
 			result = random;
@@ -107,7 +102,7 @@ struct mido_sistema_prueba{
 int main(void){
 	srand(time(NULL));
 	typedef float T;
-	int deltaSampleo = 100;
+	int deltaSampleo = 7 * 100;
 	int nSampleos = 100;
 	
 	parametros_prueba<T> p;
@@ -119,7 +114,7 @@ int main(void){
 	v.i = 1.0;
 	v.r = 0.000;
 	
-	propago_sistema_prueba<T> prop = propago_sistema_prueba<T>(0.01);
+	propago_sistema_prueba<T> prop = propago_sistema_prueba<T>(0.01 / 7.0);
 	mido_sistema_prueba<T> mid;
 	
 	std::ofstream odata ("test_data.txt");

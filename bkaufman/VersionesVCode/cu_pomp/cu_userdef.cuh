@@ -23,8 +23,8 @@ struct parametros{//Defino la estructura de mis parametros.
 		dim = 2;
 		
 		//Los valores iniciales que le doy a mis parametros.
-		b = 1.5;
-		g = 0.3;
+		b = 1.3;
+		g = 0.5;
 		
 		//Defino la inversa de la covarianza, de forma diagonal.
 		m_bb = 1.0;
@@ -89,10 +89,10 @@ struct parametros{//Defino la estructura de mis parametros.
 	
 	__host__ __device__ void err_chk(){//Para chequear valores invalidos de los parametros. Puedo fijar parametros aca tambien.
 		if(b < 1.0){
-			b = 1.0;
+			b = 2.0 - b;
 		}
 		if(g < 0.0){
-			g = 0.0;
+			g = -g;
 		}
 
 		//Puedo fijar variables aca.
@@ -199,7 +199,7 @@ struct variables_medicion{//Defino mis variables de medicion.
 		float diff = (i * prob_deteccion - real);
 		float result = exp(-diff * diff / (2 * var));
 		
-		if(result < 0.0){
+		if(result < 0.0 || ::isnan(result)){
 			return 0.0;
 		}
 		else{
@@ -254,11 +254,12 @@ struct propagador_variables{
 
 template <typename T>
 struct cooling_factor{
-	T pow_iteracion = 1.0;
-	T pow_pasada = 0.4;
-	T a = 0.1;
+	T pow_iteracion = 0.99;
+	T pow_pasada = 0.95;
+	T a = 1.0;
+	T t_osc = 10.0;
 	
-	T c_factor(int iteracion, int pasada){
+	T c_factor(int iteracion, int pasada, int k_param){
 		T result_it = 1.0;
 		T result_pas = 1.0;
 		int i = iteracion;
@@ -271,7 +272,14 @@ struct cooling_factor{
 			result_pas *= pow_pasada;
 			j--;
 		}
-		return a * result_pas * result_it;
+		T osc;
+		if(k_param == 0){
+			osc = 1 + sin(2 * 3.14159 * ((float) iteracion) / t_osc);
+		}
+		else{
+			osc = 1 - sin(2 * 3.14159 * ((float) iteracion) / t_osc);
+		}
+		return a * osc * result_pas * result_it;
 	}
 };
 //AQUI TERMINAN LAS COSAS QUE SON DEFINIDAS POR EL USUARIO.
