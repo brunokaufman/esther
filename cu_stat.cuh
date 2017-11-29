@@ -260,6 +260,8 @@ class calculo_medias_y_varianzas{
 	thrust::device_vector<T> matriz_covarianzas;//IMPORTANTE: En formato triangular superior: {1,1; 2,1; 2,2; 3,1; 3,2; 3,3; ...}, ya que es simetrica la matriz.
 	T norm_covarianza = (T) 0;
 
+	thrust::device_vector<T> vector_pesos;
+
 	private:
 	void calculo_mapeos_triangulares(){//Mapeos a usar en el proximo metodo.
 		map1.resize(N);
@@ -285,22 +287,18 @@ class calculo_medias_y_varianzas{
 		thrust::gather(thrust::device, map1.begin(), map1.end(), desviaciones_originales.begin(), expandido1.begin());
 		thrust::gather(thrust::device, map2.begin(), map2.end(), desviaciones_originales.begin(), expandido2.begin());
 		
-		expandido1_pesos.resize(N);
-		expandido2_pesos.resize(N);
+		vector_pesos.resize(N);
 		
-		thrust::gather(thrust::device, map1.begin(), map1.end(), pesos_originales.begin(), expandido1_pesos.begin());
-		thrust::gather(thrust::device, map2.begin(), map2.end(), pesos_originales.begin(), expandido2_pesos.begin());
+		thrust::gather(thrust::device, map1.begin(), map1.end(), pesos_originales.begin(), vector_pesos.begin());//Los pesos se expanden para llenar el espacio relevante a cada calculo de covarianzas. Usar map1 o map2 es equivalente ya que los pesos de cada dimension de una dada v.a. son el mismo.
 	}
 	
 	void calculo_desviaciones(){//Calcula para cada dato, la distancia a la media, y multiplica a cada par dentro de una V.A.
 		//Realizo el calculo de todas las combinaciones de productos entre cada par de componentes de cada V.A.
 		thrust::device_vector<T> vector_productos(N);
-		thrust::device_vector<T> vector_pesos_productos(N);
 		thrust::transform(thrust::device, expandido1.begin(), expandido1.end(), expandido2.begin(), vector_productos.begin(), thrust::multiplies<T>());
-		thrust::transform(thrust::device, expandido1_pesos.begin(), expandido1_pesos.end(), expandido2_pesos.begin(), vector_pesos_productos.begin(), thrust::multiplies<T>());
 		
 		//Uso mi clase de arriba, de calculo de valores medios para calcular la media del valor de cada producto (o sea, los segundos momentos M2).
-		valor_medio<T> calc_M2 = valor_medio<T>(n, num_triang_dim, vector_productos, vector_pesos_productos);//Como dimension de este nuevo vector de V.A.s, uso el numero triangular correspondiente.
+		valor_medio<T> calc_M2 = valor_medio<T>(n, num_triang_dim, vector_productos, vector_pesos);//Como dimension de este nuevo vector de V.A.s, uso el numero triangular correspondiente.
 		calc_M2.realizo_calculos();
 		m2_calculadas = calc_M2.get_medias();
 	}
